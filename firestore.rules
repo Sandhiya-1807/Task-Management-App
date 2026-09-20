@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['userId', 'title', 'priority', 'status', 'dueDate', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['userId', 'title', 'description', 'priority', 'status', 'dueDate', 'createdAt', 'updatedAt']) &&
+        data.userId is string && data.userId == request.auth.uid &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 150 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
+        data.priority in ['Low', 'Medium', 'High'] &&
+        data.status in ['To Do', 'In Progress', 'Completed'] &&
+        data.dueDate is string && data.dueDate.size() >= 8 && data.dueDate.size() <= 30;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection test document
+    match /test/{docId} {
+      allow read: if isSignedIn();
+    }
+
+    // Tasks collection
+    match /tasks/{taskId} {
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+        isValidId(taskId) &&
+        isValidTask(incoming()) &&
+        incoming().userId == request.auth.uid;
+
+      allow update: if isSignedIn() &&
+        isValidId(taskId) &&
+        existing().userId == request.auth.uid &&
+        isValidTask(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt;
+
+      allow delete: if isSignedIn() &&
+        isValidId(taskId) &&
+        existing().userId == request.auth.uid;
+    }
+  }
+}

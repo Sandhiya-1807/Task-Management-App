@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Task",
+      "description": "Task entity created and managed by an authenticated user",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID of the authenticated user who owns the task"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 150,
+          "description": "Title of the task"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Optional description or details of the task"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["Low", "Medium", "High"],
+          "description": "Priority level of the task"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["To Do", "In Progress", "Completed"],
+          "description": "Current lifecycle status of the task"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Due date in YYYY-MM-DD format"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp"
+        }
+      },
+      "required": ["userId", "title", "priority", "status", "dueDate", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Collection of tasks isolated by user ownership"
+    }
+  }
+}
